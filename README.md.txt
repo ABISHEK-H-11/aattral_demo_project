@@ -3,33 +3,33 @@
 
 This project is a Spring Boot–based industrial monitoring system that communicates with a Modbus TCP device (PLC) to:
 
-Read Temperature
+- Read Temperature
 
-Read Pressure
+- Read Pressure
 
-Trigger Relay based on alarm conditions
+- Trigger Relay based on alarm conditions
 
-Store sensor data in MySQL
+- Store sensor data in MySQL
 
-Expose REST API for dashboard access
+- Expose REST API for dashboard access
 
 The system uses multi-threaded scheduling with synchronized Modbus communication to ensure safe and reliable hardware interaction.
 
 🚀 Features
 
-Temperature polling (every 2 seconds)
+- Temperature polling (every 2 seconds)
 
-Pressure polling (every 2 seconds)
+- Pressure polling (every 2 seconds)
 
-Alarm control using relay (coil write)
+- Alarm control using relay (coil write)
 
-Data persistence in MySQL (every 5 seconds)
+- Data persistence in MySQL (every 5 seconds)
 
-REST API to fetch historical data
+- REST API to fetch historical data
 
-Thread-safe Modbus communication
+- Thread-safe Modbus communication
 
-Persistent TCP connection with retry logic
+- Persistent TCP connection with retry logic
 
 🏗 System Architecture
 
@@ -51,19 +51,19 @@ Temperature  Pressure  Safety      Dashboard
 
 🧵 Multi-Threading Design
 
-Uses ThreadPoolTaskScheduler
+- Uses ThreadPoolTaskScheduler
 
-Thread Pool Size: 4
+- Thread Pool Size: 4
 
-Scheduled Tasks
+- Scheduled Tasks
 
-Temperature polling → 2 seconds
+  - Temperature polling → 2 seconds
 
-Pressure polling → 2 seconds
+  - Pressure polling → 2 seconds
 
-Alarm monitoring → 2 seconds
+  - Alarm monitoring → 2 seconds
 
-Database persistence → 5 seconds
+  - Database persistence → 5 seconds
 
 Since Modbus TCP is not thread-safe, all Modbus communication is protected using:
 
@@ -73,26 +73,34 @@ This ensures only one Modbus transaction runs at a time, preventing response mix
 
 🔌 Modbus Communication
 
-Temperature → Reads 2 registers
+- Temperature → Reads 2 registers
 
-Pressure → Reads 1 register
+- Pressure → Reads 1 register
 
-Relay → Write coil request
+- Relay → Write coil request
 
 Temperature values are converted from two 16-bit registers into a 32-bit float using:
 
 Float.intBitsToFloat()
+
 🗄 Database Structure
 
 Table: sensor_data
 
-Column	Type
-id	Integer (PK)
-temperature	float
-pressure	double
-status	String
-timestamp	LocalDateTime
+- Column	Type
+
+- id    Integer (PK)
+
+- temperature	float
+
+- pressure	double
+
+- status	String
+
+- timestamp	LocalDateTime
+
 🌐 REST API
+
 Get All Sensor Data
 GET /api/dashboard/status
 
@@ -109,26 +117,28 @@ Example Response
     "timestamp": "2026-02-25T18:20:00"
   }
 ]
+
 🛠 Technologies Used
 
-Java 17
+- Java 17
 
-Spring Boot
+- Spring Boot
 
-Spring Data JPA
+- Spring Data JPA
 
-MySQL
+- MySQL
 
-j2mod (Modbus TCP Library)
+- j2mod (Modbus TCP Library)
 
-ThreadPoolTaskScheduler
+- ThreadPoolTaskScheduler
 
-REST API
+- REST API
+
 
 ▶️ How to Run the Project
 
 1️⃣ Clone the Repository
-git clone <https://github.com/ABISHEK-H-11/aattral_demo_project.git>
+- git clone <https://github.com/ABISHEK-H-11/aattral_demo_project.git>
 
 2️⃣ Configure application.properties
 modbus.host=YOUR_MODBUS_IP
