@@ -1,7 +1,9 @@
 package com.demo.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import java.net.InetAddress;
+
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.demo.connection.ModbusConnectionManager;
@@ -14,36 +16,59 @@ import com.ghgande.j2mod.modbus.net.TCPMasterConnection;
 @Service
 public class TemperatureService {
 
-    @Autowired
-    private ModbusConnectionManager manager;
+    private final SensorCache cache;
 
+    private ModbusConnectionManager manager;
+    
     @Value("${modbus.slaves.temperature}")
     private int slaveId;
+   
+
+    public TemperatureService(SensorCache cache, ModbusConnectionManager manager) {
+		super();
+		this.cache = cache;
+		this.manager = manager;
+	}
+
+	@Scheduled(fixedRate = 2000)
+    public void pollTemperature() {
+        try {
+            float temp = readTemperature();
+            cache.setTemperature(temp);
+//            System.out.println("Temp Updated: " + temp);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     public float readTemperature() throws Exception {
 
-        TCPMasterConnection connection = manager.getConnection();
-        ModbusTCPTransaction transaction = new ModbusTCPTransaction(connection);
+    	TCPMasterConnection connection = manager.getConnection();
 
-        ReadMultipleRegistersRequest request =
-                new ReadMultipleRegistersRequest(0, 2);
+    	synchronized (connection) {
 
-        request.setUnitID(slaveId);
+    	    ModbusTCPTransaction transaction =
+    	            new ModbusTCPTransaction(connection);
 
-        transaction.setRequest(request);
-        transaction.execute();
+    	    ReadMultipleRegistersRequest request =
+    	            new ReadMultipleRegistersRequest(0, 2);
 
-        ReadMultipleRegistersResponse response =
-                (ReadMultipleRegistersResponse) transaction.getResponse();
+    	    request.setUnitID(slaveId);
 
-        int high = response.getRegisterValue(0);
-        int low = response.getRegisterValue(1);
+    	    transaction.setRequest(request);
+    	    transaction.execute();
 
+    	    ReadMultipleRegistersResponse response =
+    	            (ReadMultipleRegistersResponse) transaction.getResponse();
 
-        float temperature = FloatConverter.convertRegistersToFloat(low, high);
-        temperature = Math.round(temperature * 100f) / 100f;
-        return temperature;
-        
+    	    int high = response.getRegisterValue(0);
+    	    int low = response.getRegisterValue(1);
+
+    	    float temperature =
+    	            FloatConverter.convertRegistersToFloat(low, high);
+
+    	    return Math.round(temperature * 100f) / 100f;
+    	}
         
     }
 }

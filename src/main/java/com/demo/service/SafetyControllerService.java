@@ -16,25 +16,29 @@
 	public class SafetyControllerService {
 	
 	    private boolean alarmState = false;
-	
-	    @Autowired
-	    private TemperatureService tempService;
-	
-	    @Autowired
-	    private PressureService pressureService;
-	
-	    @Autowired
+   
 	    private ModbusConnectionManager manager;
 	
-	    @Value("${modbus.slaves.relay}")
+	    private final SensorCache cache;
+	    
+	    
+	    public SafetyControllerService( ModbusConnectionManager manager, SensorCache cache) {
+			super();
+			
+			this.manager = manager;
+			this.cache = cache;
+			
+		}
+
+		@Value("${modbus.slaves.relay}")
 	    private int relaySlave;
 	
 	    @Scheduled(fixedRate = 2000)
 	    public void monitor() throws Exception {
 //	    	System.out.println("Monitor method executing...");
-	        float temp = tempService.readTemperature();
+	        float temp = cache.getTemperature();
 	        System.out.println("Temperature = " + temp+"°C");
-	        double pressure = pressureService.readPressurePercentage();
+	        double pressure = cache.getPressure();
 	        System.out.println("pressure = " + pressure + "%");
 	        if (temp > 75.0 || pressure > 90.0) {
 	            if (!alarmState) {
@@ -52,15 +56,19 @@
 	    }
 
 	    private void triggerRelay(boolean state) throws Exception {
-	
-	        TCPMasterConnection connection = manager.getConnection();
-	        ModbusTCPTransaction transaction = new ModbusTCPTransaction(connection);
-	
-	        WriteCoilRequest request = new WriteCoilRequest(0, state);
-	        request.setUnitID(relaySlave);
-	
-	        transaction.setRequest(request);
-	        transaction.execute();
+	    	 TCPMasterConnection connection = manager.getConnection();
+
+	    	    synchronized (connection) {
+
+	    	        ModbusTCPTransaction transaction =
+	    	                new ModbusTCPTransaction(connection);
+
+	    	        WriteCoilRequest request = new WriteCoilRequest(0, state);
+	    	        request.setUnitID(relaySlave);
+
+	    	        transaction.setRequest(request);
+	    	        transaction.execute();
+	    	    }
 	    }
 	
 	    private void log(String message) {

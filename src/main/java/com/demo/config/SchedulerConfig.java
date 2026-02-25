@@ -11,7 +11,7 @@ public class SchedulerConfig {
     @Bean
     public TaskScheduler taskScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-        scheduler.setPoolSize(3);
+        scheduler.setPoolSize(4);
         scheduler.setThreadNamePrefix("modbus-poller-");
         scheduler.initialize();
         return scheduler;	

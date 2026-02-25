@@ -2,7 +2,8 @@
 	
 	import org.springframework.beans.factory.annotation.Autowired;
 	import org.springframework.beans.factory.annotation.Value;
-	import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 	
 	import com.demo.connection.ModbusConnectionManager;
 	import com.ghgande.j2mod.modbus.io.ModbusTCPTransaction;
@@ -13,33 +14,51 @@
 	@Service
 	public class PressureService {
 	
-	    @Autowired
-	    private ModbusConnectionManager manager;
+		private final ModbusConnectionManager manager;
+	    private final SensorCache cache;
+	    
 	
-	    @Value("${modbus.slaves.pressure}")
+	    public PressureService(ModbusConnectionManager manager, SensorCache cache) {
+			super();
+			this.manager = manager;
+			this.cache = cache;
+			
+		}
+
+		@Value("${modbus.slaves.pressure}")
 	    private int slaveId;
 	
+		@Scheduled(fixedRate = 2000)
+	    public void pollPressure() {
+	        try {
+	            double pressure = readPressurePercentage();
+	            cache.setPressure(pressure);
+//	            System.out.println("Pressure Updated: " + pressure);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+	    }
+		
 	    public double readPressurePercentage() throws Exception {
 	
 	        TCPMasterConnection connection = manager.getConnection();
-	        ModbusTCPTransaction transaction = new ModbusTCPTransaction(connection);
-	
-	        ReadMultipleRegistersRequest request =
-	                new ReadMultipleRegistersRequest(2, 1);
-	
-	        request.setUnitID(slaveId);
-	
-	        transaction.setRequest(request);
-	        transaction.execute();
-	
-	        ReadMultipleRegistersResponse response =
-	                (ReadMultipleRegistersResponse) transaction.getResponse();
-	
-	        int raw = response.getRegisterValue(0);
-	        double pressure = (raw / 10000.0) * 100.0;
+	        synchronized (connection) {
+	            ModbusTCPTransaction transaction =
+	                    new ModbusTCPTransaction(connection);
 
-	        pressure = Math.round(pressure * 100.0) / 100.0;
-	        
-	        return pressure ;
+	            ReadMultipleRegistersRequest request =
+	                    new ReadMultipleRegistersRequest(2, 1);
+
+	            request.setUnitID(slaveId);
+
+	            transaction.setRequest(request);
+	            transaction.execute();
+
+	            ReadMultipleRegistersResponse response =
+	                    (ReadMultipleRegistersResponse) transaction.getResponse();
+
+	            int raw = response.getRegisterValue(0);
+	            return Math.round(((raw / 10000.0) * 100.0) * 100.0) / 100.0;
+	        }
 	    }
 	}
